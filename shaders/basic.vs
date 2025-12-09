@@ -8,7 +8,7 @@ uniform vec2 offset;
 
 void main()
 {
-    vec3 pos = aPos + vec3(offset, 0.0);
+    vec3 pos = aPos/2 + vec3(offset, 0.0);
     gl_Position = vec4(pos, 1.0);
     outColor = aColor;
     outUV = aUV;

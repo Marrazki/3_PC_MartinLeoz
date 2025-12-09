@@ -22,7 +22,7 @@ private:
 
     unsigned int VBOSquare, EBOSquare, VAOSquare, shaderProgramSquare;
     unsigned int VBOTriangle, EBOTriangle, VAOTriangle, shaderProgramTriangle;
-
+    unsigned int textureID;
     void init();
     void mainLoop();
     void cleanup();
@@ -32,6 +32,6 @@ private:
 
     void initSquare();
     void initTriangle();
-    void initShaders();
+    unsigned int initShaders(std::string fileFragment, std::string fileVertex);
     std::string loadShaderSource(const std::string& path);
 };

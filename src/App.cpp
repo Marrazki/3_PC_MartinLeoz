@@ -39,9 +39,11 @@ void App::init() {
 
     glViewport(0, 0, 800, 800);
 
-    initShaders();
-    initTriangle();
+    shaderProgramSquare = initShaders("../shaders/texture.fs", "../shaders/basic.vs");
+    shaderProgramTriangle = initShaders("../shaders/basic.fs", "../shaders/basic.vs");
     initTexture();
+    initTriangle();
+    initSquare();
 }
 
 std::string App::loadShaderSource(const std::string& path) {
@@ -56,9 +58,9 @@ std::string App::loadShaderSource(const std::string& path) {
     return buffer.str();
 }
 
-void App::initShaders() {
-    std::string vertexCode = loadShaderSource("../shaders/basic.vs");
-    std::string fragmentCode = loadShaderSource("../shaders/basic.fs");
+unsigned int App::initShaders(std::string fileFragment, std::string fileVertex) {
+    std::string vertexCode = loadShaderSource(fileVertex);
+    std::string fragmentCode = loadShaderSource(fileFragment);
 
     const char* vShaderCode = vertexCode.c_str();
     const char* fShaderCode = fragmentCode.c_str();
@@ -85,34 +87,34 @@ void App::initShaders() {
         std::cerr << "Error compilando Fragment Shader:\n" << infoLog << "\n";
     }
 
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
+    unsigned int result = glCreateProgram();
+    glAttachShader(result, vertexShader);
+    glAttachShader(result, fragmentShader);
+    glLinkProgram(result);
 
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    glGetProgramiv(result, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        glGetProgramInfoLog(result, 512, nullptr, infoLog);
         std::cerr << "Error linkeando Shader Program:\n" << infoLog << "\n";
     }
-
+    
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+    return result;
 }
 
 void App::initSquare() {
     float vertices[] = {
         // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+         0.5f, 0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   0.0f, 1.0f,   // top right
          0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,   // bottom left
         -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
-
     };
 
     unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
+        0, 1, 2, // first triangle
+        0, 2, 3  // second triangle
     };
 
     glGenVertexArrays(1, &VAOSquare);
@@ -138,16 +140,16 @@ void App::initSquare() {
     glEnableVertexAttribArray(2);
 }
 void App::initTriangle() {
+    std::cout << "Inicializacion triangle " << std::endl;
     float vertices[] = {
         // positions          // colors           // texture coords
-         -0.5f,  -0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   -1.0f, -1.0f,   // top right
-         0.0f, 0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   0.0f, 1.0f,   // bottom right
-        0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, -1.0f,   // bottom left
+         -0.5f,  -0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   0.0f, 0.0f, 
+         0.0f, 0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   0.0f, 1.0f,  
+         0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   1.0f, 0.0f,  
     };
 
     unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
+        0, 1, 2, // first triangle
     };
 
     glGenVertexArrays(1, &VAOTriangle);
@@ -178,7 +180,6 @@ void App::initTexture()
     int width, height, nrChannels;
     unsigned char* data = stbi_load("../assets/textures/grassBlock.jpg", &width, &height, &nrChannels, 0);
 
-    unsigned int textureID;
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -197,25 +198,40 @@ void App::run() {
 }
 
 void App::mainLoop() {
+    std::cout << "Main Loop" << std::endl;
+
     while (!glfwWindowShouldClose(window)) {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shaderProgramSquare);
-        int offsetLoc = glGetUniformLocation(shaderProgramSquare, "offset");
-        glUniform2f(offsetLoc, -0.5f, 0.5);
-        glBindVertexArray(VAOSquare);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glUseProgram(shaderProgramSquare);
-        offsetLoc = glGetUniformLocation(shaderProgramSquare, "offset");
-        glUniform2f(offsetLoc, 0.5f, 0.5);
-        glBindVertexArray(VAOSquare);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glUseProgram(shaderProgramTriangle);
+
+        int offsetLoc = glGetUniformLocation(shaderProgramTriangle, "offset");
+        glUniform2f(offsetLoc, 0.5f, 0.5f);
+        glBindVertexArray(VAOTriangle);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
         glUseProgram(shaderProgramTriangle);
         offsetLoc = glGetUniformLocation(shaderProgramTriangle, "offset");
-        glUniform2f(offsetLoc, -0.5f, -0.5);
+        glUniform2f(offsetLoc, -0.5f, -0.5f);
         glBindVertexArray(VAOTriangle);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+
+        glUseProgram(shaderProgramTriangle);
+        offsetLoc = glGetUniformLocation(shaderProgramTriangle, "offset");
+        glUniform2f(offsetLoc, -0.5f, 0.5f);
+        glBindVertexArray(VAOTriangle);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+
+
+        glUseProgram(shaderProgramSquare);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+
+        glUniform1i(glGetUniformLocation(shaderProgramSquare, "texture1"), 0);
+        offsetLoc = glGetUniformLocation(shaderProgramSquare, "offset");
+        glUniform2f(offsetLoc, 0.5f, -0.5f);
+        glBindVertexArray(VAOSquare);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
